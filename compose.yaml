@@ -1,0 +1,21 @@
+services:
+  vsjetpack_plugins:
+    image: ghcr.io/srappan/vsjetpack/nvidia:0.1
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities:
+                - gpu
+              driver: cdi
+              device_ids:
+                - nvidia.com/gpu=all
+    stdin_open: true
+    # you might need this depending if you are running rootless or have incorrect permissions to access GPU
+    # privileged: true 
+    tty: true
+ #   volumes:
+      #- ./arch:/target
+    command: /bin/sh
+networks: {}
