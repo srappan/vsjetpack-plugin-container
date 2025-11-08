@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
 #
-LABEL org.opencontainers.image.source=https://github.com/srappan/vsjetpack-plugin-container
 FROM archlinux:base-devel AS build
 
 ENV LANG=C.UTF-8 \
@@ -15,10 +14,12 @@ ENV LANG=C.UTF-8 \
     PKGEXT=".pkg.tar" \
     PKGDEST="/home/vsuser/plugin_pkgs"
 
-RUN pacman-key --init \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/pacman \ 
+    pacman-key --init \
     && pacman-key --populate archlinux
 
-RUN pacman -Syu --noconfirm --needed \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/pacman \ 
+    pacman -Syu --noconfirm --needed \
     git \
     python \
     vapoursynth \
@@ -42,6 +43,12 @@ RUN pacman -Syu --noconfirm --needed \
     llvm \
     intel-oneapi-mkl \
     unzip \
+    jq \
+    cudnn \
+    python-build \
+    python-installer \
+    python-setuptools \
+    python-wheel \
     && pacman -Scc --noconfirm
 RUN source /etc/profile
 
@@ -195,6 +202,17 @@ RUN git clone https://aur.archlinux.org/vapoursynth-plugin-d2vsource-git.git && 
     cd vapoursynth-plugin-d2vsource-git && \
     makepkg --noconfirm
 WORKDIR /home/vsuser
+RUN git clone https://aur.archlinux.org/tensorrt.git && \
+    cd tensorrt && \
+    ls
+WORKDIR /home/vsuser    
+RUN git clone https://aur.archlinux.org/vapoursynth-plugin-edgemasks-git.git && \
+    cd vapoursynth-plugin-edgemasks-git && \
+    makepkg --noconfirm
+WORKDIR /home/vsuser
+# RUN git clone https://aur.archlinux.org/vapoursynth-plugin-mlrt-trt-runtime-git.git && \
+#     cd vapoursynth-plugin-mlrt-trt-runtime-git && \
+#     makepkg --noconfirm
 RUN rm -rf /home/vsuser/plugin_pkgs/*-debug*.pkg.tar
 
 # RUN git clone https://aur.archlinux.org/python-pyparsebluray-git.git && \
@@ -221,9 +239,11 @@ ENV LANG=C.UTF-8 \
     LD_LIBRARY_PATH=/opt/cuda/lib64 \
     PKGEXT=".pkg.tar" 
 
-RUN pacman-key --init \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/pacman \ 
+    pacman-key --init \
     && pacman-key --populate archlinux
-RUN pacman -Syu --noconfirm --needed \
+RUN --mount=type=cache,sharing=locked,target=/var/cache/pacman \ 
+    pacman -Syu --noconfirm --needed \
     python \
     vapoursynth \
     ffmpeg \
@@ -236,7 +256,10 @@ RUN pacman -Syu --noconfirm --needed \
     && pacman -Scc --noconfirm
 RUN source /etc/profile
 COPY --from=build /home/vsuser/*/*.pkg.tar plugin_pkgs/
-RUN pacman --noconfirm -U --needed */*.pkg.tar
+RUN pacman --noconfirm -U --needed */*.pkg.tar && \
+    rm -rfv plugin_pkgs
+LABEL org.opencontainers.image.source=https://github.com/srappan/vsjetpack-plugin-container
+
 # RUN echo "PKGEXT='.pkg.tar'" >> /home/vsuser/.makepkg.conf
 
 # USER vsuser
